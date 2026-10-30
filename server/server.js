@@ -1,14 +1,25 @@
+import express from 'express';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
-import { WebSocketServer } from 'ws';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Change 'COM12' to match your Device Manager port if it changes
-const SERIAL_PATH = process.env.SERIAL_PORT || 'COM12'; 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const server = createServer(app); // Creates a unified HTTP server
+const wss = new WebSocketServer({ server }); // Binds WebSockets to the same server
+
+const SERIAL_PATH = process.env.SERIAL_PORT || 'COM12';
 const BAUD_RATE = 921600;
-const WS_PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
-const wss = new WebSocketServer({ port: WS_PORT });
-console.log(`PULSEGUARD WebSocket Server active on ws://localhost:${WS_PORT}`);
+// 1. Serve static files from your React build folder
+// (Make sure you run 'npm run build' in your frontend folder first)
+app.use(express.static(path.join(__dirname, '../client/build')));
 
 let port;
 let parser;
@@ -50,5 +61,10 @@ function connectSerial() {
   });
 }
 
-// Start the auto-connecting loop
+// Start the auto-connecting serial loop
 connectSerial();
+
+// 2. Start the unified server (Handles web pages AND WebSockets on port 8080)
+server.listen(PORT, () => {
+  console.log(`PULSEGUARD Production Server running at http://localhost:${PORT}`);
+});

@@ -137,6 +137,32 @@ export default function App() {
     { time: '16:21:30', playerId: 'P04', type: 'High Risk', hr: 162, temp: 38.1, activity: 'Reduced', details: 'Heat stress warning in 32°C ambient' },
     { time: '16:23:10', playerId: 'P07', type: 'SOS ALERT', hr: 171, temp: 38.3, activity: 'No movement', details: 'SOS triggered + zero movement on pitch' },
   ]);
+  // Plays a sharp emergency beep when an SOS triggers
+const playSosAudioAlert = () => {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create oscillator for a piercing alarm tone
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = 'sawtooth'; 
+    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+    oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.25);
+
+    gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.3);
+  } catch (e) {
+    // Browsers block audio until the user interacts with the page at least once
+    console.log("Audio waiting for user page interaction");
+  }
+};
 
  useEffect(() => {
   const timer = setInterval(() => {
@@ -345,7 +371,7 @@ const formattedDate = currentDateTime.toLocaleDateString([], { day: '2-digit', m
           <Activity className="w-8 h-8 text-red-500" />
           <div>
             <h1 className="text-xl font-extrabold tracking-wider text-sky-400">
-              PRESERVE<span className="text-white">GUARD</span>
+              PULSE<span className="text-white">GUARD</span>
             </h1>
             <p className="text-[11px] uppercase tracking-widest text-slate-400">
               Team Safety Monitoring • {wsConnected ? 'ESP-NOW USB Receiver Live' : 'Offline Standalone Mode'}
